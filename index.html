@@ -1,83 +1,19 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InstaChat Miguel</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: sans-serif; background: #000; color: #fff; height: 100vh; display: flex; align-items: center; justify-content: center; }
-        #login-screen { display: flex; flex-direction: column; width: 80%; max-width: 300px; text-align: center; }
-        input { padding: 12px; border-radius: 8px; border: 1px solid #333; background: #1a1a1a; color: #fff; margin-bottom: 10px; }
-        button { padding: 12px; border-radius: 8px; border: none; background: #0095f6; color: #fff; font-weight: bold; cursor: pointer; }
-        #app-container { display: none; flex-direction: column; width: 100%; height: 100vh; background: #000; }
-    </style>
-</head>
 <body>
-
-<div id="login-screen">
-    <h2 style="margin-bottom:20px">InstaChat</h2>
-    <input type="text" id="username-input" placeholder="Seu nome...">
-    <button onclick="startChat()">Entrar</button>
-</div>
-
-<div id="app-container">
-    <div style="padding:15px; border-bottom:1px solid #222; text-align:center">Direct</div>
-    <div id="chat-box" style="flex:1; overflow-y:auto; padding:15px"></div>
-    <div style="padding:15px; display:flex; gap:10; background:#111">
-        <input type="text" id="msg-input" style="flex:1; margin:0" placeholder="Mensagem...">
-        <button onclick="enviarMsg()" style="width:auto">Enviar</button>
+    <div id="login-screen" style="display: none;">
+        <h2>InstaChat</h2>
+        <input type="text" id="username-input">
+        <button onclick="startChat()">Entrar</button>
     </div>
-</div>
 
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyBF0WQX_FA_6PjoXrAedP4FW7pHe0JhQqM",
-        authDomain: "chat-67ce0.firebaseapp.com",
-        databaseURL: "https://chat-67ce0-default-rtdb.firebaseio.com/",
-        projectId: "chat-67ce0",
-        storageBucket: "chat-67ce0.firebasestorage.app",
-        messagingSenderId: "258653873381",
-        appId: "1:258653873381:web:76ec90f3f2112c4900e00c"
-    };
+    <div id="app-container" style="display: flex; flex-direction: column; height: 100vh;">
+        <div style="padding:15px; border-bottom:1px solid #222; text-align:center">Direct</div>
+        
+        <div id="chat-box" style="flex:1; overflow-y:auto; padding:15px; display: block !important;">
+            </div>
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    let meuNome = "";
-
-    function startChat() {
-        const nome = document.getElementById('username-input').value;
-        if(nome.trim() !== "") {
-            meuNome = nome;
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('app-container').style.display = 'flex';
-            document.body.style.display = 'block';
-        }
-    }
-
-    function enviarMsg() {
-        const txt = document.getElementById('msg-input');
-        if(txt.value.trim() !== "") {
-            db.ref('mensagens').push({
-                usuario: meuNome,
-                texto: txt.value,
-                hora: new Date().getHours() + ":" + new Date().getMinutes()
-            });
-            txt.value = "";
-        }
-    }
-
-    db.ref('mensagens').on('value', (snap) => {
-        const box = document.getElementById('chat-box');
-        box.innerHTML = "";
-        snap.forEach(c => {
-            const d = c.val();
-            box.innerHTML += `<div style="margin-bottom:10px"><b>${d.usuario}:</b> ${d.texto}</div>`;
-        });
-        box.scrollTop = box.scrollHeight;
-    });
-</script>
+        <div style="padding:15px; display:flex; gap:10px; background:#111; border-top:1px solid #222;">
+            <input type="text" id="msg-input" style="flex:1; background:#222; color:#fff; border:none; padding:10px; border-radius:5px;" placeholder="Mensagem...">
+            <button onclick="enviarMsg()" style="background:#0095f6; padding:10px; border-radius:5px; border:none; color:#fff;">Enviar</button>
+        </div>
+    </div>
 </body>
-</html>
