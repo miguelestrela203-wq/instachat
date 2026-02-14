@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstaChat Miguel</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, sans-serif; background: #fff; height: 100vh; overflow: hidden; }
+        #login-screen { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; padding: 20px; }
+        #login-screen input { width: 100%; max-width: 250px; padding: 12px; border: 1px solid #dbdbdb; border-radius: 8px; margin-bottom: 10px; }
+        #login-screen button { background: #0095f6; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; width: 100%; }
+        #app-container { display: none; flex-direction: column; height: 100vh; }
+        #header { padding: 15px; border-bottom: 1px solid #dbdbdb; text-align: center; font-weight: bold; }
+        #chat-box { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background: #fafafa; }
+        .msg-container { display: flex; flex-direction: column; max-width: 75%; margin-bottom: 8px; }
+        .sent-container { align-self: flex-end; align-items: flex-end; }
+        .received-container { align-self: flex-start; align-items: flex-start; }
+        .msg { padding: 10px 15px; border-radius: 20px; font-size: 14px; word-wrap: break-word; }
+        .sent { background: linear-gradient(45deg, #a800ff, #0095f6); color: white; }
+        .received { background: #efefef; color: #262626; border: 1px solid #dbdbdb; }
+        .chat-img { max-width: 100%; border-radius: 10px; margin-top: 5px; border: 1px solid #dbdbdb; }
+        #input-area { padding: 10px; border-top: 1px solid #dbdbdb; display: flex; gap: 10px; align-items: center; }
+        #msg-input { flex: 1; border: 1px solid #dbdbdb; border-radius: 25px; padding: 10px 15px; outline: none; }
+        .btn-icon { font-size: 22px; cursor: pointer; color: #0095f6; }
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <h2>InstaChat</h2>
+    <input type="text" id="username-input" placeholder="Seu nome...">
+    <button onclick="startChat()">Entrar</button>
+</div>
+
+<div id="app-container">
+    <div id="header">Direct</div>
+    <div id="chat-box"></div>
+    <div id="input-area">
+        <label class="btn-icon">📷<input type="file" id="img-input" style="display:none" accept="image/*"></label>
+        <input type="text" id="msg-input" placeholder="Mensagem...">
+        <span class="btn-icon" id="send-btn">➤</span>
+    </div>
+</div>
+
+<script>
+    // Suas chaves que já estão no seu Acode
+    const firebaseConfig = {
+        apiKey: "AIzaSyBF0WQX_FA_6PjoXrAedP4FW7pHe0JhQqM",
+        authDomain: "chat-67ce0.firebaseapp.com",
+        databaseURL: "https://chat-67ce0-default-rtdb.firebaseio.com/", 
+        projectId: "chat-67ce0",
+        storageBucket: "chat-67ce0.firebasestorage.app",
+        messagingSenderId: "258653873381",
+        appId: "1:258653873381:web:76ec90f3f2112c4900e00c"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let meuNome = "";
+    
+    // Sua chave do ImgBB que você gerou
+    const IMGBB_KEY = "80de10d6c65f8e53e559f2c80572a7eb"; 
+
+    function startChat() {
+        const inputNome = document.getElementById('username-input');
+        if (inputNome.value.trim() !== "") {
+            meuNome = inputNome.value.trim();
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-container').style.display = 'flex';
+        }
+    }
+
+    const msgInput = document.getElementById('msg-input');
+    const sendBtn = document.getElementById('send-btn');
+    const imgInput = document.getElementById('img-input');
+    const chatBox = document.getElementById('chat-box');
+
+    function enviarMsg(texto, urlFoto) {
+        const agora = new Date();
+        const hora = agora.getHours() + ":" + agora.getMinutes().toString().padStart(2, '0');
+        db.ref('mensagens').push({
+            usuario: meuNome,
+            texto: texto,
+            foto: urlFoto,
+            hora: hora
+        });
+    }
+
+    sendBtn.onclick = () => {
+        if (msgInput.value.trim()) {
+            enviarMsg(msgInput.value, null);
+            msgInput.value = "";
+        }
+    };
+
+    imgInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append("image", file);
+
+        fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, {
+            method: "POST",
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            enviarMsg(null, data.data.url);
+        });
+    };
+
+    db.ref('mensagens').on('value', (snapshot) => {
+        chatBox.innerHTML = "";
+        snapshot.forEach(child => {
+            const data = child.val();
+            const id = child.key;
+            const isMe = data.usuario === meuNome;
+            const div = document.createElement('div');
+            div.className = `msg-container ${isMe ? 'sent-container' : 'received-container'}`;
+            div.ondblclick = () => isMe && confirm("Apagar?") && db.ref('mensagens/'+id).remove();
+            let conteudo = data.texto ? `<div class="msg ${isMe ? 'sent':'received'}">${data.texto}</div>` : 
+                                       `<img src="${data.foto}" class="chat-img">`;
+            div.innerHTML = `<span style="font-size:10px; color:gray">${data.usuario} • ${data.hora}</span>${conteudo}`;
+            chatBox.appendChild(div);
+        });    // Esse código faz o scroll esperar a imagem carregar para descer até o fim
+    setTimeout(() => {
+        chatBox.scrollTo({
+            top: chatBox.scrollHeight,
+            behavior: 'smooth' // Desce deslizando, igual no Insta
+        });
+    }, 100); // 100ms é o tempo de folga para o navegador processar a nova msg
+
