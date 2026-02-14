@@ -1,19 +1,100 @@
-<body>
-    <div id="login-screen" style="display: none;">
-        <h2>InstaChat</h2>
-        <input type="text" id="username-input">
-        <button onclick="startChat()">Entrar</button>
-    </div>
-
-    <div id="app-container" style="display: flex; flex-direction: column; height: 100vh;">
-        <div style="padding:15px; border-bottom:1px solid #222; text-align:center">Direct</div>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>InstaChat</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: sans-serif; background: #000; color: #fff; height: 100vh; display: flex; flex-direction: column; }
         
-        <div id="chat-box" style="flex:1; overflow-y:auto; padding:15px; display: block !important;">
-            </div>
+        /* TELA DE LOGIN */
+        #login-screen { position: fixed; inset: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
+        #login-screen input { padding: 12px; border-radius: 8px; border: 1px solid #333; background: #1a1a1a; color: #fff; margin-bottom: 10px; width: 250px; }
+        #login-screen button { padding: 12px; border-radius: 8px; border: none; background: #0095f6; color: #fff; font-weight: bold; width: 250px; }
 
-        <div style="padding:15px; display:flex; gap:10px; background:#111; border-top:1px solid #222;">
-            <input type="text" id="msg-input" style="flex:1; background:#222; color:#fff; border:none; padding:10px; border-radius:5px;" placeholder="Mensagem...">
-            <button onclick="enviarMsg()" style="background:#0095f6; padding:10px; border-radius:5px; border:none; color:#fff;">Enviar</button>
-        </div>
+        /* ESTRUTURA DO CHAT */
+        #app-container { display: none; flex-direction: column; height: 100vh; width: 100%; }
+        #header { padding: 15px; border-bottom: 1px solid #222; text-align: center; font-weight: bold; font-size: 18px; }
+        #chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* AREA DE INPUT */
+        #input-area { padding: 15px; display: flex; gap: 10px; background: #000; border-top: 1px solid #222; align-items: center; }
+        #msg-input { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid #333; background: #1a1a1a; color: #fff; outline: none; }
+        #send-btn { background: #0095f6; border: none; padding: 10px 15px; border-radius: 20px; color: #fff; font-weight: bold; }
+
+        .msg { background: #262626; padding: 10px; border-radius: 15px; max-width: 80%; width: fit-content; }
+        .my-msg { align-self: flex-end; background: #3797f0; }
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <h1 style="margin-bottom: 20px;">InstaChat</h1>
+    <input type="text" id="username-input" placeholder="Digite seu nome...">
+    <button onclick="startChat()">Entrar no Chat</button>
+</div>
+
+<div id="app-container">
+    <div id="header">Direct</div>
+    <div id="chat-box"></div>
+    <div id="input-area">
+        <input type="text" id="msg-input" placeholder="Mensagem...">
+        <button id="send-btn" onclick="enviarMsg()">Enviar</button>
     </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyBF0WQX_FA_6PjoXrAedP4FW7pHe0JhQqM",
+        authDomain: "chat-67ce0.firebaseapp.com",
+        databaseURL: "https://chat-67ce0-default-rtdb.firebaseio.com/",
+        projectId: "chat-67ce0",
+        storageBucket: "chat-67ce0.firebasestorage.app",
+        messagingSenderId: "258653873381",
+        appId: "1:258653873381:web:76ec90f3f2112c4900e00c"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let meuNome = "";
+
+    function startChat() {
+        const input = document.getElementById('username-input');
+        if (input.value.trim() !== "") {
+            meuNome = input.value.trim();
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-container').style.display = 'flex';
+        }
+    }
+
+    function enviarMsg() {
+        const input = document.getElementById('msg-input');
+        if (input.value.trim() !== "" && meuNome !== "") {
+            db.ref('mensagens').push({
+                usuario: meuNome,
+                texto: input.value.trim(),
+                hora: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+            });
+            input.value = "";
+        }
+    }
+
+    db.ref('mensagens').on('value', (snapshot) => {
+        const chatBox = document.getElementById('chat-box');
+        chatBox.innerHTML = "";
+        snapshot.forEach(child => {
+            const data = child.val();
+            const isMe = data.usuario === meuNome;
+            const div = document.createElement('div');
+            div.className = isMe ? 'msg my-msg' : 'msg';
+            div.innerHTML = `<small style="display:block; font-size:10px; opacity:0.7">${data.usuario}</small>${data.texto}`;
+            chatBox.appendChild(div);
+        });
+        chatBox.scrollTop = chatBox.scrollHeight;
+    });
+</script>
 </body>
+</html>
